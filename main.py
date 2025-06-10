@@ -1,21 +1,26 @@
-from confluent_kafka import Producer
+import time
 
-conf = {
-    'bootstrap.servers': 'localhost:9092'
-}
+from SensorManager import SensorManager
+from core.config import cfg
 
-producer = Producer(conf)
+def main():
+    kafka_config = {
+        'bootstrap.servers': cfg.PRODUCER_SERVER ,
+        'client.id': 'IOT Симулятор'
+    }
 
-def delivery_report(err, msg):
-    if err is not None:
-        print(f'Ошибка доставки сообщения: {err}')
-    else:
-        print(f'Сообщение доставлено в {msg.topic()} [{msg.partition()}]')
+    manager = SensorManager(kafka_config)
 
-topic = 'my_topic'
+    manager.create_sensors(1000)
 
-for i in range(10):
-    producer.produce(topic, key=str(i), value=f'Сообщение {i}', callback=delivery_report)
-    producer.poll(0)
+    try:
+        manager.start_all_sensors()
+        print("Датчики запущены")
+        time.sleep(300)
 
-producer.flush()
+    finally:
+        manager.stop_all_sensors()
+        print("Датчики остановлены")
+
+if __name__ == "__main__":
+    main()
